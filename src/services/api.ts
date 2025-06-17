@@ -10,7 +10,7 @@ import {
   GoalCreate 
 } from '../types';
 
-const API_BASE_URL = 'http://198.211.105.95:8080';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://198.211.105.95:8080';
 
 // Función para obtener el token del localStorage
 const getAuthToken = (): string | null => {
@@ -26,37 +26,49 @@ const getAuthHeaders = () => {
   };
 };
 
+// Función helper para manejar respuestas
+const handleResponse = async (response: Response) => {
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('API Error:', response.status, errorText);
+    throw new Error(`Error ${response.status}: ${errorText || 'Error en la solicitud'}`);
+  }
+  
+  const contentType = response.headers.get('content-type');
+  if (contentType && contentType.includes('application/json')) {
+    return response.json();
+  }
+  return response.text();
+};
+
 // Servicios de autenticación
 export const authService = {
   async register(data: RegisterRequest): Promise<void> {
+    console.log('Registrando usuario:', data.email);
     const response = await fetch(`${API_BASE_URL}/authentication/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
     
-    if (!response.ok) {
-      throw new Error('Error en el registro');
-    }
+    await handleResponse(response);
   },
 
   async login(data: LoginRequest): Promise<LoginResponse> {
+    console.log('Iniciando sesión:', data.email);
     const response = await fetch(`${API_BASE_URL}/authentication/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
     
-    if (!response.ok) {
-      throw new Error('Error en el login');
-    }
-    
-    const result: LoginResponse = await response.json();
+    const result: LoginResponse = await handleResponse(response);
     
     // Guardar token en localStorage
-    if (result.data.token) {
+    if (result.data && result.data.token) {
       localStorage.setItem('token', result.data.token);
       localStorage.setItem('email', result.data.email);
+      console.log('Token guardado correctamente');
     }
     
     return result;
@@ -65,6 +77,7 @@ export const authService = {
   logout() {
     localStorage.removeItem('token');
     localStorage.removeItem('email');
+    console.log('Sesión cerrada');
   }
 };
 
@@ -75,110 +88,88 @@ export const expenseService = {
     if (year) params.append('year', year.toString());
     if (month) params.append('month', month.toString());
     
+    console.log('Obteniendo resumen de gastos:', { year, month });
     const response = await fetch(`${API_BASE_URL}/expenses_summary?${params}`, {
       headers: getAuthHeaders()
     });
     
-    if (!response.ok) {
-      throw new Error('Error al obtener resumen de gastos');
-    }
-    
-    return response.json();
+    return handleResponse(response);
   },
 
   async getDetails(year: number, month: number, categoryId: number): Promise<ExpenseDetail[]> {
+    console.log('Obteniendo detalles de gastos:', { year, month, categoryId });
     const response = await fetch(
       `${API_BASE_URL}/expenses/detail?year=${year}&month=${month}&categoryId=${categoryId}`,
       { headers: getAuthHeaders() }
     );
     
-    if (!response.ok) {
-      throw new Error('Error al obtener detalles de gastos');
-    }
-    
-    return response.json();
+    return handleResponse(response);
   },
 
   async create(expense: ExpenseCreate): Promise<ExpenseDetail> {
+    console.log('Creando gasto:', expense);
     const response = await fetch(`${API_BASE_URL}/expenses`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(expense)
     });
     
-    if (!response.ok) {
-      throw new Error('Error al crear gasto');
-    }
-    
-    return response.json();
+    return handleResponse(response);
   },
 
   async delete(id: number): Promise<void> {
+    console.log('Eliminando gasto:', id);
     const response = await fetch(`${API_BASE_URL}/expenses/${id}`, {
       method: 'DELETE',
       headers: getAuthHeaders()
     });
     
-    if (!response.ok) {
-      throw new Error('Error al eliminar gasto');
-    }
+    await handleResponse(response);
   }
 };
 
 // Servicios de categorías
 export const categoryService = {
   async getAll(): Promise<Category[]> {
+    console.log('Obteniendo categorías');
     const response = await fetch(`${API_BASE_URL}/expenses_category`, {
       headers: getAuthHeaders()
     });
     
-    if (!response.ok) {
-      throw new Error('Error al obtener categorías');
-    }
-    
-    return response.json();
+    return handleResponse(response);
   }
 };
 
 // Servicios de metas
 export const goalService = {
   async getAll(): Promise<Goal[]> {
+    console.log('Obteniendo metas');
     const response = await fetch(`${API_BASE_URL}/goals`, {
       headers: getAuthHeaders()
     });
     
-    if (!response.ok) {
-      throw new Error('Error al obtener metas');
-    }
-    
-    return response.json();
+    return handleResponse(response);
   },
 
   async create(goal: GoalCreate): Promise<Goal> {
+    console.log('Creando meta:', goal);
     const response = await fetch(`${API_BASE_URL}/goals`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(goal)
     });
     
-    if (!response.ok) {
-      throw new Error('Error al crear meta');
-    }
-    
-    return response.json();
+    return handleResponse(response);
   },
 
   async update(id: number, goal: Partial<GoalCreate>): Promise<Goal> {
+    console.log('Actualizando meta:', id, goal);
     const response = await fetch(`${API_BASE_URL}/goals/${id}`, {
       method: 'PATCH',
       headers: getAuthHeaders(),
       body: JSON.stringify(goal)
     });
     
-    if (!response.ok) {
-      throw new Error('Error al actualizar meta');
-    }
-    
-    return response.json();
+    return handleResponse(response);
   }
 };
