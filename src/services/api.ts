@@ -86,17 +86,41 @@ export const authService = {
 // Servicios de gastos
 export const expenseService = {
   async getSummary(year?: number, month?: number): Promise<ExpenseSummary[]> {
-    const params = new URLSearchParams();
-    if (year) params.append('year', year.toString());
-    if (month) params.append('month', month.toString());
-    
-    console.log('Obteniendo resumen de gastos:', { year, month });
-    const response = await fetch(`${API_BASE_URL}/expenses_summary?${params}`, {
-      headers: getAuthHeaders()
-    });
-    
-    return handleResponse(response);
-  },
+  const params = new URLSearchParams();
+  if (year) params.append('year', year.toString());
+  if (month) params.append('month', month.toString());
+
+  console.log('Obteniendo resumen de gastos:', { year, month });
+  const response = await fetch(`${API_BASE_URL}/expenses_summary?${params}`, {
+    headers: getAuthHeaders()
+  });
+
+  const rawData = await handleResponse(response);
+
+  // Agrupar por categoría
+  const groupedMap = new Map<number, ExpenseSummary>();
+
+  rawData.forEach((item: any) => {
+    // Asegura que coincidan año y mes si se están filtrando
+    if ((year && item.year !== year) || (month && item.month !== month)) return;
+
+    const catId = item.expenseCategory.id;
+    const catName = item.expenseCategory.name;
+    const amount = Number(item.amount) || 0;
+
+    if (groupedMap.has(catId)) {
+      groupedMap.get(catId)!.totalAmount += amount;
+    } else {
+      groupedMap.set(catId, {
+        categoryId: catId,
+        categoryName: catName,
+        totalAmount: amount
+      });
+    }
+  });
+
+  return Array.from(groupedMap.values());
+},
 
   async getDetails(year: number, month: number, categoryId: number): Promise<ExpenseDetail[]> {
     console.log('Obteniendo detalles de gastos:', { year, month, categoryId });
