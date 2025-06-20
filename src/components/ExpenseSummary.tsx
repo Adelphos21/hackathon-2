@@ -11,8 +11,9 @@ const ExpenseSummaryComponent: React.FC<ExpenseSummaryProps> = ({ onCategoryClic
   const [summary, setSummary] = useState<ExpenseSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const currentDate = new Date();
+  const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
 
   const loadSummary = async () => {
     setLoading(true);
@@ -22,6 +23,7 @@ const ExpenseSummaryComponent: React.FC<ExpenseSummaryProps> = ({ onCategoryClic
       setSummary(data);
     } catch (err) {
       setError('Error al cargar el resumen de gastos');
+      console.error('Error loading summary:', err);
     } finally {
       setLoading(false);
     }
@@ -47,6 +49,11 @@ const ExpenseSummaryComponent: React.FC<ExpenseSummaryProps> = ({ onCategoryClic
 
   const years = [2023, 2024, 2025];
 
+  const resetToCurrentMonth = () => {
+    setSelectedMonth(currentDate.getMonth() + 1);
+    setSelectedYear(currentDate.getFullYear());
+  };
+
   if (loading) return <div className="loading">Cargando resumen...</div>;
   if (error) return <div className="error">{error}</div>;
 
@@ -71,6 +78,12 @@ const ExpenseSummaryComponent: React.FC<ExpenseSummaryProps> = ({ onCategoryClic
               <option key={year} value={year}>{year}</option>
             ))}
           </select>
+          <button 
+            onClick={resetToCurrentMonth}
+            className="reset-btn"
+          >
+            Mes Actual
+          </button>
         </div>
       </div>
 
@@ -88,7 +101,7 @@ const ExpenseSummaryComponent: React.FC<ExpenseSummaryProps> = ({ onCategoryClic
             <h4>{item.categoryName}</h4>
             <p className="amount">{formatCurrency(item.totalAmount)}</p>
             <p className="percentage">
-              {((item.totalAmount / totalGastos) * 100).toFixed(1)}% del total
+              {totalGastos > 0 ? `${((item.totalAmount / totalGastos) * 100).toFixed(1)}% del total` : '0% del total'}
             </p>
           </div>
         ))}
