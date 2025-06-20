@@ -25,7 +25,9 @@ const AuthForm: React.FC<AuthFormProps> = ({ isLogin, onToggle }) => {
         console.log('Intentando login con:', email);
         const response = await authService.login({ email, passwd: password });
         console.log('Login exitoso:', response);
-        login(response.data.token, response.data.email);
+        const token = response.result.token;
+        const username = response.result.username;
+        login(token, username);
       } else {
         if (password.length < 12) {
           setError('La contraseña debe tener al menos 12 caracteres');

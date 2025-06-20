@@ -54,7 +54,7 @@ export const authService = {
     await handleResponse(response);
   },
 
-  async login(data: LoginRequest): Promise<LoginResponse> {
+  async login(data: LoginRequest): Promise<any> {
     console.log('Iniciando sesión:', data.email);
     const response = await fetch(`${API_BASE_URL}/authentication/login`, {
       method: 'POST',
@@ -62,13 +62,15 @@ export const authService = {
       body: JSON.stringify(data)
     });
     
-    const result: LoginResponse = await handleResponse(response);
-    
-    // Guardar token en localStorage
-    if (result.data && result.data.token) {
-      localStorage.setItem('token', result.data.token);
-      localStorage.setItem('email', result.data.email);
+    const result = await handleResponse(response);
+    // Ajuste para estructura real del backend: result.result.token y result.result.username
+    if (result && result.result && result.result.token) {
+      localStorage.setItem('token', result.result.token);
+      localStorage.setItem('email', result.result.username); // Guardamos username como email
       console.log('Token guardado correctamente');
+    } else {
+      console.error('Respuesta inesperada del backend al hacer login:', result);
+      throw new Error('No se recibió un token válido del backend.');
     }
     
     return result;
