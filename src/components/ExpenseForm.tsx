@@ -10,7 +10,7 @@ interface ExpenseFormProps {
 
 const ExpenseForm: React.FC<ExpenseFormProps> = ({ onExpenseCreated, onClose }) => {
   const [categories, setCategories] = useState<Category[]>([]);
-  const [formData, setFormData] = useState<ExpenseCreate>({
+  const [formData, setFormData] = useState({
     amount: 0,
     description: '',
     categoryId: 0,
@@ -49,8 +49,17 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onExpenseCreated, onClose }) 
       return;
     }
 
+    const expenseToSend: ExpenseCreate = {
+      amount: formData.amount,
+      description: formData.description,
+      date: formData.date,
+      category: {
+        id: formData.categoryId
+      }
+    };
+
     try {
-      await expenseService.create(formData);
+      await expenseService.create(expenseToSend);
       onExpenseCreated();
       onClose();
     } catch (err) {

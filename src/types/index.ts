@@ -36,7 +36,9 @@ export interface ExpenseDetail {
 export interface ExpenseCreate {
   amount: number;
   description: string;
-  categoryId: number;
+  category: {
+    id: number;
+  };
   date: string;
 }
 
